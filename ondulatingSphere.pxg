@@ -1,0 +1,122 @@
+@ ./ondulatingSphere video:gl:p3d {
+  #%graph.x 0
+  #%graph.y 0
+  #%graph.comment A component demonstrating vertex shader fun.\n
+  #%graph.colors Red
+  .code "
+
+    // BOILERPLATE BELOW
+
+    @P(0)
+    @Type.String(mime = GLSL_VERTEX_MIME, template = DEFAULT_VERTEX_SHADER)
+    @OnChange(\"updateShader\")
+    @Port(false)
+    String vertex = \"ha\";
+
+    @P(1)
+    @Type.String(mime = GLSL_FRAGMENT_MIME, template = DEFAULT_FRAGMENT_SHADER)
+    @OnChange(\"updateShader\")
+    @Port(false)
+    String fragment = \"ha\";
+
+
+    PShader shader;
+
+    @P(3) @Type.Number(min = 0, max = 1, def = 0.5) double u1;
+
+    double rx =0;
+
+    @Override
+    public void setup() \{
+        sphereDetail(100);
+    \}
+
+    @Override
+    public void draw() \{
+        if (shader == null) \{
+            shader = createShader( vertex.isEmpty() ? DEFAULT_VERTEX_SHADER : vertex,
+                    fragment.isEmpty() ? DEFAULT_FRAGMENT_SHADER : fragment);
+        \}
+        shader(shader);
+        shader.set(\"u1\", u1+=0.02);
+
+        translate(width/2, height/2);
+        rotateX(rx+=0.004);
+//        translate(-width/2, -height/2);
+//        fill(200,0,0);
+
+//        stroke(100);
+//        strokeWeight(2);
+//        noStroke();
+        beginShape();
+        sphere(400.0);
+        endShape();
+        rect(100,100,100,100);
+
+    \}
+
+    void codeShape()\{
+        beginShape();
+        for(int i = 0; i < vertex.length()-2; i+=3)\{
+            vertex( (vertex.charAt(i)/127.0)*width, (vertex.charAt(i+1)/127.0)*height, -(vertex.charAt(i+2)/127.0)*height);
+        \}
+        endShape();
+    \}
+
+    void updateShader() \{
+        shader = null;
+    \}
+"
+  .vertex "uniform mat4 transformMatrix;
+uniform mat4 texMatrix;
+
+uniform float u1;
+
+attribute vec4 position;
+attribute vec4 color;
+attribute vec2 texCoord;
+
+varying vec4 vertColor;
+varying vec4 vertTexCoord;
+
+void main()
+\{
+    vertTexCoord = texMatrix * vec4(texCoord, 1.0, 1.0);
+
+    vec4 other = position;
+    other.z +=  sin((u1*3.1423)+other.x/100.0)*100.0;
+
+    vec4 posout = transformMatrix * other;
+    vec4 colorMod = other;
+    vec4 vertcol = color;
+
+    if(mod(gl_VertexID,2) ==  1)\{
+        vertcol.b = (colorMod.x/1920.0);
+        vertcol.g = (colorMod.y/1080.0);
+    \}
+    else\{
+        vertcol.r = (colorMod.x/1920.0);
+        vertcol.g = (colorMod.y/1080.0);
+    \}
+
+    vertColor = vertcol;
+
+    gl_Position = posout;
+\}
+"
+  .fragment "//uniform sampler2D texture;
+uniform float u1;
+uniform vec2 texOffset;
+
+varying vec4 vertColor;
+varying vec4 vertTexCoord;
+
+void main() \{
+    vec2 pos = vertTexCoord.st;
+    vec4 col = vertColor;
+    col.b = sin(u1*3.14/10.0);
+    col.a = 1.0;
+    gl_FragColor = col;
+\}"
+  .u-1 86.39999999999995
+}
