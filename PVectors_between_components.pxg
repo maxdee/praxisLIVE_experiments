@@ -1,0 +1,162 @@
+@ ./pointMaker core:custom {
+  #%graph.x 0
+  #%graph.y 31
+  .code "import java.io.*;
+
+
+    @AuxOut(0)
+    Output points;
+
+    ArrayList<PVector> vectors;
+
+
+    @Override
+    public void setup() \{
+        vectors = new ArrayList<PVector>();
+        generateData();
+    \}
+
+    // generate some vectors
+    void generateData()\{
+        vectors.clear();
+        for(int i = 0 ; i < 1000; i++)\{
+            vectors.add(new PVector(random(1)-0.5, random(1)-0.5, random(1)-0.5));
+        \}
+    \}
+
+    @Override
+    public void update() \{
+        for(PVector _pv : vectors)\{
+            // modify as you wish
+            _pv.z = 0.0;
+        \}
+        outputData();
+    \}
+
+    // output the data
+    void outputData()\{
+        try \{
+            PBytes.OutputStream bos = new PBytes.OutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(bos);
+            oos.writeObject(vectors);
+            oos.close();
+            points.send(bos.toBytes());
+        \} catch (Exception ex) \{
+            log(ERROR, ex);
+        \}
+    \}
+"
+}
+@ ./pointRender video:gl:p3d {
+  #%graph.x 493
+  #%graph.y 0
+  #%graph.colors Red
+  .code "
+
+
+    @P(0) ArrayList<PVector> points = new ArrayList<PVector>();
+
+    double rx;
+
+    @Override
+    public void setup() \{
+        rectMode(CENTER);
+    \}
+
+    @Override
+    public void draw() \{
+
+        translate(width/2, height/2);
+        rotateX(rx += 0.01);
+        rotateY(sin(rx));
+        scale(2.0);
+
+        stroke(255);
+        double _scal = 444.0;
+        strokeWeight(5);
+        for(PVector _pv : points)\{
+            point(_pv.x*_scal , _pv.y*_scal, _pv.z*_scal);
+        \}
+    \}
+"
+  .points "s"
+}
+@ ./pointMover core:custom {
+  #%graph.x 227
+  #%graph.y 31
+  .code "import java.io.*;
+
+
+    @P(0) ArrayList<PVector> pointsInput = new ArrayList<PVector>();
+
+    @AuxOut(0)
+    Output pointsOutput;
+
+    double ani;
+
+    @Override
+    public void setup() \{
+
+    \}
+
+    @Override
+    public void update() \{
+        ani += 0.1;
+        PVector zero = new PVector(0,0,0);
+        for(PVector _pv : pointsInput)\{
+            _pv.z = sin(ani+(_pv.dist(zero)*10.0))/20.0;
+        \}
+        outputData();
+    \}
+
+    // output the data
+    void outputData()\{
+        try \{
+            PBytes.OutputStream bos = new PBytes.OutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(bos);
+            oos.writeObject(pointsInput);
+            oos.close();
+            pointsOutput.send(bos.toBytes());
+        \} catch (Exception ex) \{
+            log(ERROR, ex);
+        \}
+    \}
+"
+  .points-input "r"
+}
+@ ./otherPointRender video:gl:p3d {
+  #%graph.x 493
+  #%graph.y 92
+  #%graph.colors Red
+  .code "
+
+    @P(0) ArrayList<PVector> points = new ArrayList<PVector>();
+
+    double rx;
+
+    @Override
+    public void setup() \{
+        rectMode(CENTER);
+    \}
+
+    @Override
+    public void draw() \{
+
+        translate(width/2, height/2);
+        rotateX(radians(90));//rx += 0.01);
+//        rotateY(sin(rx));
+        scale(2.0);
+
+        stroke(255,0,255);
+        double _scal = 444.0;
+        strokeWeight(5);
+        for(PVector _pv : points)\{
+            point(_pv.x*_scal , _pv.y*_scal, _pv.z*_scal);
+        \}
+    \}
+"
+  .points "a"
+}
+~ ./pointMaker!points ./pointMover!points-input
+~ ./pointMover!points-output ./pointRender!points
+~ ./pointMover!points-output ./otherPointRender!points
